@@ -39,15 +39,10 @@ import pandas as pd
 
 # Webscraping Algorithm
 async def insertCompanyEmailFormat(company, companies_ref):
-    # check if company already added with formats
-    # value_exists = df["column_name"].eq(company).any()
-
     # set up variables - things to add
     data_list = company.split(" ")
     email_formats = []
-    current = ""
 
-    # print("Conducting new email_format")
     for i in range(len(data_list)):
         email_format = "{{0[first]}}{2[separator]}{{1[last]}}@{3[company]}"
 

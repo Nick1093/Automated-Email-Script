@@ -12,6 +12,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
+import undetected_chromedriver as uc
 
 # working with environment variable imports
 import os
@@ -28,7 +29,8 @@ from firebase_admin import credentials, firestore
 load_dotenv()
 
 # for undetected chromedriver
-# ssl._create_default_https_context = ssl._create_unverified_context
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
 
 # Initialize the Firebase Admin SDK with your service account credentials
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -49,73 +51,69 @@ companies_ref = db.collection("Companies")
 
 # Path to chromebrowser and driver
 PATH_TO_CHROMEDRIVER = (
-    "/Users/mac/Desktop/Projects/Email Script/chromedriver-mac-x64/chromedriver"
+    "/Users/mac/Desktop/Projects/Chrome Driver/chromedriver-mac-x64/chromedriver"
 )
-PATH_TO_CHROMEBROWSER = "/Users/mac/Desktop/Projects/Email Script/chrome-mac-x64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"
+PATH_TO_CHROMEBROWSER = "/Users/mac/Desktop/Projects/Chrome Driver/chrome-mac-x64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"
 # ------------------------------------------------------------------------------------------------------------------------------ #
 
 
 async def getCompanyEmailFormats(companies: list):
-    # CHROME DRIVER OPTIONS
+   # CHROME DRIVER OPTIONS
     chrome_options = Options()
     chrome_options.add_experimental_option("detach", True)
     chrome_options.add_argument("start-maximized")
+    # chrome_options.add_argument("--headless")
     chrome_options.binary_location = PATH_TO_CHROMEBROWSER
     # ------------------------------------------------------------------------------------------------------------------------------ #
 
     # Driver - Browser
-    driver = webdriver.Chrome(PATH_TO_CHROMEDRIVER, options=chrome_options)
-
-    # get log in info
-    username = os.environ.get("EMAIL_ADDRESS")
-    password = os.environ.get("ROCKET_REACH_PASS")
+    driver = webdriver.Chrome(
+        service=Service(executable_path=PATH_TO_CHROMEDRIVER), options=chrome_options
+    )
 
     # go to rocket reach
     driver.get("https://rocketreach.co/login?next=%2F")
 
-    # sleep(3)
-
-    # user = driver.find_element(By.ID, "id_email")
-    # user.send_keys(username)
-    # password_input = driver.find_element(By.ID, "id_password")
-    # password_input.send_keys(password)
-    # password_input.send_keys(Keys.RETURN)
-
-    # do security manually
-
-    # click on the search
-    # driver.switch_to.window(driver.window_handles[0])
-    # wait = WebDriverWait(driver, 10)
-    # driver.refresh()
-    # wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "Install Chrome Extension")))
-
+    # log in manually
     process = input("Did you finish logging in? ")
 
     while process.lower().strip() != "yes":
         process = input("Did you finish logging in? ")
 
+    # get companies page
     driver.get("https://rocketreach.co/company?start=1&pageSize=10")
-
-    # driver.find_element(By.PARTIAL_LINK_TEXT, "or skip").click()
 
     for i in range(len(companies)):
         email_formats = []
 
-        # get the search bar and enter the current company
-        search = driver.find_element(
-            By.XPATH,
-            "/html/body/div[1]/div/div[1]/div[2]/div[2]/div[2]/div/div[2]/div[2]/div/div[1]/div/rr-keyword-search-facet-input/form/div/div/input",
-        )
+        # locate the search bar and enter the current company
+        while True:
+            try:
+                search = driver.find_element(
+                    By.XPATH,
+                    "/html/body/div[1]/div/div[1]/div[2]/div[2]/div[2]/div/div[2]/div[2]/div/div[1]/div/rr-keyword-search-facet-input/form/div/div/input",
+                )
+                break
+            except:
+                driver.refresh()
+                sleep(1)
+                continue    
+
+        # enter the company in the search bar
         search.clear()
         search.send_keys(companies[i])
         search.send_keys(Keys.RETURN)
 
         # wait until the table of search results appears
-        try:
-            WebDriverWait(driver, timeout=20).until(
-                EC.visibility_of_element_located((By.CLASS_NAME, "search-results-list"))
-            )
-        except:
+        while True:
+            try:
+                WebDriverWait(driver, timeout=10).until(
+                    EC.visibility_of_element_located((By.CLASS_NAME, "search-results-list"))
+                )
+                break
+            except:
+                pass
+        
             try:
                 WebDriverWait(driver, timeout=10).until(
                     EC.presence_of_element_located(
@@ -125,102 +123,124 @@ async def getCompanyEmailFormats(companies: list):
                         )
                     )
                 )
+                break
             except:
-                manual = input("Must do it manually: ")
-                while manual != "done":
-                    manual = input("Must do it manually: ")
+                driver.refresh()
+                sleep(1)
+                continue
 
-        # get the first element of the search results list
-        try:
-            WebDriverWait(driver, timeout=10).until(
-                EC.element_to_be_clickable(
-                    (
-                        By.XPATH,
-                        "/html/body/div[1]/div/div[1]/div[2]/div[2]/div[2]/div/div[2]/div[2]/div/div[2]/rr-unified-search-results/div/div[3]/div/ul/li[1]/rr-company-search-result/div/div[1]/div[1]/div[2]/a",
+        # wait for the first element of the search results list to appear
+        while True:
+            try:
+                WebDriverWait(driver, timeout=10).until(
+                    EC.element_to_be_clickable(
+                        (
+                            By.XPATH,
+                            "/html/body/div[1]/div/div[1]/div[2]/div[2]/div[2]/div/div[2]/div[2]/div/div[2]/rr-unified-search-results/div/div[3]/div/ul/li[1]/rr-company-search-result/div/div[1]/div[1]/div[2]/a",
+                        )
                     )
                 )
-            )
-        except:
-            manual = input("Must do it manually: ")
-            while manual != "done":
-                manual = input("Must do it manually: ")
+                break
+            except:
+                driver.refresh()
+                sleep(1)
+                continue
 
         # click on the first element of the search results table to get to the emails
-        results_list = driver.find_element(By.CLASS_NAME, "search-results-list")
-        rows = results_list.find_elements(By.TAG_NAME, "li")
-        try:
-            first_element = rows[0].find_element(By.CLASS_NAME, "profile-image-wpr")
-        except:
-            first_element = rows[0].find_element(
-                By.XPATH,
-                "/html/body/div[1]/div/div[1]/div[2]/div[2]/div[2]/div/div[2]/div[2]/div/div[2]/rr-unified-search-results/div/div[3]/div/ul/li[1]/rr-company-search-result/div/div[1]/div[1]/div[2]/a",
-            )
+        results_list = None
+        rows = None
+        while True:
+            try:
+                results_list = driver.find_element(By.CLASS_NAME, "search-results-list")
+                rows = results_list.find_elements(By.TAG_NAME, "li")
+                break
+            except:
+                driver.refresh()
+                sleep(3)
+                continue
+        
+        # get the first element, then click on it
+        first_element = rows[0]
+        print("First element HTML:")
+        print(first_element.get_attribute("outerHTML"))
+        while True:
+            try:
+                first_element = rows[0].find_element(By.CLASS_NAME, "profile-image-w[r]")
+                break
+            except:
+                pass
+            try:
+                first_element = rows[0].find_element(
+                    By.XPATH,
+                    "/html/body/div[1]/div/div[1]/div[2]/div[2]/div[2]/div/div[2]/div[2]/div/div[2]/rr-unified-search-results/div/div[3]/div/ul/li[1]/rr-company-search-result/div/div[1]/div[1]/div[2]/a",
+                ) 
+            except:
+                driver.refresh()
+                sleep(1)
+                continue
         first_element.click()
 
-        # # try:
-        # # click on the first element
-        # try:
-        #     driver.find_element(
-        #         By.XPATH,
-        #         "/html/body/div[1]/div/div[1]/div[2]/div[2]/div[2]/div/div[2]/div[2]/div/div[2]/rr-unified-search-results/div/div[3]/div/ul/li[1]/rr-company-search-result/div/div[1]/div[1]/div[2]/a/div/div",
-        #     ).click()
-        # except:
-        #     driver.find_element(
-        #         By.CLASS_NAME,
-        #         "profile-image-wpr"
-        #     ).click()
-
+        # switch to new tab
         driver.switch_to.window(driver.window_handles[1])
 
         # Locate the email format tab
-        WebDriverWait(driver, timeout=10).until(
-            EC.visibility_of_element_located(
-                (
+        while True:
+            try:
+                WebDriverWait(driver, timeout=10).until(
+                    EC.visibility_of_element_located(
+                        (
+                            By.XPATH,
+                            "/html/body/div[1]/div/div/div[3]/div[1]/div/ul/li[2]/a",
+                        )
+                    )
+                )
+
+                # click on email format tab
+                driver.find_element(
+                    By.XPATH, "/html/body/div[1]/div[7]/div/div[3]/div[1]/div/ul/li[2]/a"
+                ).click()
+
+                # Wait for the table to appear
+                WebDriverWait(driver, timeout=10).until(
+                    EC.visibility_of_element_located(
+                        (
+                            By.XPATH,
+                            "/html/body/div[1]/div[7]/div/div[3]/div[1]/div/div/div[1]/div/div/div[1]/div[2]/div/table",
+                        )
+                    )
+                )
+
+                WebDriverWait(driver, timeout=10).until(
+                    EC.presence_of_element_located(
+                        (
+                            By.CLASS_NAME,
+                            "rr-profile-contact-card",
+                        )
+                    )
+                )
+                driver.find_element(
                     By.XPATH,
-                    "/html/body/div[1]/div/div/div[3]/div[1]/div/ul/li[2]/a",
+                    "/html/body/div[1]/div[7]/div/div[3]/div[1]/div/div/div[1]/div/div/div[1]/div[2]/div/table/tbody",
                 )
-            )
-        )
-        # click the email form tab
-        driver.find_element(
-            By.XPATH, "/html/body/div[1]/div[7]/div/div[3]/div[1]/div/ul/li[2]/a"
-        ).click()
+                tds = driver.find_elements(By.TAG_NAME, "td")
+                break
+            except:
+                driver.refresh()
+                sleep(3)
+                continue
 
-        # Wait for the table to appear
-        WebDriverWait(driver, timeout=10).until(
-            EC.visibility_of_element_located(
-                (
-                    By.XPATH,
-                    "/html/body/div[1]/div[7]/div/div[3]/div[1]/div/div/div[1]/div/div/div[1]/div[2]/div/table",
-                )
-            )
-        )
-
-        WebDriverWait(driver, timeout=10).until(
-            EC.presence_of_element_located(
-                (
-                    By.CLASS_NAME,
-                    "rr-profile-contact-card",
-                )
-            )
-        )
-
-        driver.find_element(
-            By.XPATH,
-            "/html/body/div[1]/div[7]/div/div[3]/div[1]/div/div/div[1]/div/div/div[1]/div[2]/div/table/tbody",
-        )
-        tds = driver.find_elements(By.TAG_NAME, "td")
-
+        # process rows of the table
         current_row = []
         for td in range(len(tds)):
             if len(current_row) == 3:
                 email_formats.append(current_row)
                 current_row = []
 
-            try:
-                current_row.append(tds[td].text)
-            except:
-                for i in range(2):
+            while True:
+                try:
+                    current_row.append(tds[td].text)
+                    break
+                except:
                     driver.refresh()
                     # Wait for the table to appear
                     WebDriverWait(driver, timeout=10).until(
@@ -237,13 +257,7 @@ async def getCompanyEmailFormats(companies: list):
                     )
                     tds = driver.find_elements(By.TAG_NAME, "td")
 
-                    try:
-                        current_row.append(tds[td].text)
-                        break
-                    except:
-                        continue
-
-        await insert_format_todb.insertCompanyEmailFormat(
+        new_id = await insert_format_todb.insertCompanyEmailFormat(
             email_formats, companies_ref
         )
         driver.close()

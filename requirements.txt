@@ -1,6 +1,7 @@
-Selenium
+selenium
 bs4
 webdriver-manager
 linkedin-scraper
 undetected-chromedriver
 firebase-admin
+pandas

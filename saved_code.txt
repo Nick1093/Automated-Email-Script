@@ -1,0 +1,39 @@
+
+    # user = driver.find_element(By.ID, "id_email")
+    # user.send_keys(username)
+    # password_input = driver.find_element(By.ID, "id_password")
+    # password_input.send_keys(password)
+    # password_input.send_keys(Keys.RETURN)
+
+    # do security manually
+
+    # click on the search
+    # driver.switch_to.window(driver.window_handles[0])
+    # wait = WebDriverWait(driver, 10)
+    # driver.refresh()
+    # wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "Install Chrome Extension")))
+
+
+    # driver.find_element(By.PARTIAL_LINK_TEXT, "or skip").click()
+
+
+
+        # # try:
+        # # click on the first element
+        # try:
+        #     driver.find_element(
+        #         By.XPATH,
+        #         "/html/body/div[1]/div/div[1]/div[2]/div[2]/div[2]/div/div[2]/div[2]/div/div[2]/rr-unified-search-results/div/div[3]/div/ul/li[1]/rr-company-search-result/div/div[1]/div[1]/div[2]/a/div/div",
+        #     ).click()
+        # except:
+        #     driver.find_element(
+        #         By.CLASS_NAME,
+        #         "profile-image-wpr"
+        #     ).click()
+
+
+
+
+    # get log in info
+    username = os.environ.get("EMAIL_ADDRESS")
+    password = os.environ.get("ROCKET_REACH_PASS")
