@@ -38,18 +38,15 @@ import pandas as pd
 
 
 # Webscraping Algorithm
-async def insertCompanyEmailFormat(company, companies_ref):
+async def insertCompanyEmailFormat(companies, companies_ref):
     # set up variables - things to add
-    data_list = company.split(" ")
     email_formats = []
 
-    for i in range(len(data_list)):
+    for i in range(len(companies)):
         email_format = "{{0[first]}}{2[separator]}{{1[last]}}@{3[company]}"
 
-        current_row = data_list[i]
-
         # string play with the format
-        format = current_row[0].replace("[", " ").replace("]", " ")
+        format = companies[0].replace("[", " ").replace("]", " ")
         current_format = format.split(" ")
         first = current_format[0]
         second = current_format[-1]
@@ -59,9 +56,9 @@ async def insertCompanyEmailFormat(company, companies_ref):
         else:
             delimeter = False
 
-        company = current_row[1].split("@")[1]
+        company = companies[1].split("@")[1]
 
-        accuracy = float(current_row[-1].replace("%", ""))
+        accuracy = float(companies[-1].replace("%", ""))
 
         current_entry = email_format.format(
             {"first": first},
@@ -73,6 +70,5 @@ async def insertCompanyEmailFormat(company, companies_ref):
         email_formats.append({"email_format": current_entry, "accuracy": accuracy})
 
     doc_id = companies_ref.add({"name": company, "email_formats": email_formats})
-    print(doc_id.id)
 
     return doc_id

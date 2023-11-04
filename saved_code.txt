@@ -37,3 +37,32 @@
     # get log in info
     username = os.environ.get("EMAIL_ADDRESS")
     password = os.environ.get("ROCKET_REACH_PASS")
+
+
+    # process rows of the table
+        # current_row = []
+        # for td in range(len(tds)):
+        #     if len(current_row) == 3:
+        #         email_formats.append(current_row)
+        #         current_row = []
+
+        #     while True:
+        #         try:
+        #             current_row.append(tds[td].text)
+        #             break
+        #         except:
+        #             driver.refresh()
+        #             # Wait for the table to appear
+        #             WebDriverWait(driver, timeout=10).until(
+        #                 EC.visibility_of_element_located(
+        #                     (
+        #                         By.XPATH,
+        #                         "/html/body/div[1]/div[7]/div/div[3]/div[1]/div/div/div[1]/div/div/div[1]/div[2]/div/table",
+        #                     )
+        #                 )
+        #             )
+        #             driver.find_element(
+        #                 By.XPATH,
+        #                 "/html/body/div[1]/div[7]/div/div[3]/div[1]/div/div/div[1]/div/div/div[1]/div[2]/div/table/tbody",
+        #             )
+                    # tds = driver.find_elements(By.TAG_NAME, "td")
