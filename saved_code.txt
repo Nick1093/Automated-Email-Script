@@ -66,3 +66,31 @@
         #                 "/html/body/div[1]/div[7]/div/div[3]/div[1]/div/div/div[1]/div/div/div[1]/div[2]/div/table/tbody",
         #             )
                     # tds = driver.find_elements(By.TAG_NAME, "td")
+driver.find_element(By.CLASS_NAME, "main__sign-in-link").click()
+
+    user = driver.find_element(By.ID, "username")
+    user.send_keys(username)
+    password_input = driver.find_element(By.ID, "password")
+    password_input.send_keys(password)
+    password_input.send_keys(Keys.RETURN)
+
+
+    # wait for table to load
+    WebDriverWait(driver, timeout=10).until(
+        EC.visibility_of_all_elements_located(
+            (
+                By.CLASS_NAME,
+                "reusable-search__result-container",
+            )
+        )
+    )
+
+# wait for page to load
+    WebDriverWait(driver, timeout=10).until(
+        EC.element_to_be_clickable(
+            (
+                By.CLASS_NAME,
+                "main__sign-in-link",
+            )
+        )
+    )

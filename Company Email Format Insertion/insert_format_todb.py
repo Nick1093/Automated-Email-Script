@@ -31,11 +31,10 @@ excel_file = "/Users/mac/Desktop/Projects/Automated-Email-Script/Email Formats.x
 df = pd.read_excel(excel_file)
 # ------------------------------------------------------------------------------------------------------------------------------ #
 
+
+
 # helper to create the format to put into the database
 def createEmailFormat(format, company_part):
-    # email_format = Template('{{0[$first]}}$separator{{1[$last]}}@{3[$company]}.com')
-    # "{{0[" + "{first}" + "]}}{2[" + "{separator}" + "]}{1[" + "{last}" + "]}@{3[" + "{company}" + "]}.com"
-
     delimeter = format.split("]")
     if len(delimeter) > 2:
         delimeter = delimeter[1][0] if delimeter[1][0] != "[" else ""
@@ -52,6 +51,7 @@ def createEmailFormat(format, company_part):
     final_format = first + delimeter + second + company_part
 
     return final_format
+
 
 
 # Webscraping Algorithm

@@ -29,6 +29,8 @@ from dotenv import load_dotenv
 import os
 from selenium.webdriver.chrome.options import Options
 
+# LinkedIn Scraper
+from linkedin_scraper import Person
 
 import undetected_chromedriver as uc
 
@@ -66,7 +68,7 @@ df = pd.DataFrame(columns=column_names)
 # starting row for data frame
 df_row = 1
 
-
+# scrape LinkedIn link and build emails
 def scrapingAlgorithm(link, companies_ref):
     chrome_options = Options()
     chrome_options.add_experimental_option("detach", True)
@@ -75,29 +77,14 @@ def scrapingAlgorithm(link, companies_ref):
 
     driver = webdriver.Chrome(PATH_TO_CHROMEDRIVER, options=chrome_options)
 
-    username = os.environ.get("EMAIL_ADDRESS")
-    password = os.environ.get("LINKEDIN_PASS")
-
+    # get to the link and perform log in manually
     driver.get(link)
 
-    # wait for page to load
-    WebDriverWait(driver, timeout=10).until(
-        EC.element_to_be_clickable(
-            (
-                By.CLASS_NAME,
-                "main__sign-in-link",
-            )
-        )
-    )
+    # manually log in
+    process = input("Did you finish logging in? ")
 
-    driver.find_element(By.CLASS_NAME, "main__sign-in-link").click()
-
-    user = driver.find_element(By.ID, "username")
-    user.send_keys(username)
-    password_input = driver.find_element(By.ID, "password")
-    password_input.send_keys(password)
-    password_input.send_keys(Keys.RETURN)
-
+    while process.lower().strip() != "yes":
+        process = input("Did you finish logging in? ")
 
     # wait for table to load
     WebDriverWait(driver, timeout=10).until(
@@ -108,7 +95,7 @@ def scrapingAlgorithm(link, companies_ref):
             )
         )
     )
-
+    
     # get pages
     try:
         pages = driver.find_element(
@@ -120,8 +107,8 @@ def scrapingAlgorithm(link, companies_ref):
         print("not found pages")
         pages = 100
 
-    # loop through each page to scrape information
-    for i in range(1, pages):
+    # go through all pages
+    for i in range(1, 100):
         # information to scrape
         name = None
         emails = None
@@ -131,63 +118,91 @@ def scrapingAlgorithm(link, companies_ref):
         # update current page
         link = f"{link}&page={i}"
 
-        try:
-            # get current page
-            driver.get(link)
-        except:
-            driver.quit()
-            break
+        # keep trying to get link
+        while True:
+            try:
+                driver.get(link)
+                break
+            except:
+                driver.refresh()
+                continue
+
+            # keep trying to see list of search results
+        while True:
+            try:
+                # wait for table to load
+                WebDriverWait(driver, timeout=10).until(
+                    EC.visibility_of_all_elements_located(
+                        (
+                            By.CLASS_NAME,
+                            "reusable-search__result-container",
+                        )
+                    )
+                )
+                break
+            except:
+                driver.refresh()
+                sleep(1)
+                continue
 
         # get the source for bs4 to work
         curr_page = driver.page_source
         doc = BeautifulSoup(curr_page, "html.parser")
 
-        # major = doc.find(["div"], class_="ph0 pv2 artdeco-card mb2").ul
+        # need to establish connection point
         major = doc.find("div", class_="pv0 ph0 mb2 artdeco-card")
-        people_list = major.find(
-            "ul", class_="reusable-search__entity-result-list list-style-none"
-        )
 
-        people = people_list.find_all("li", class_="reusable-search__result-container")
+        while True:
+            try:
+                people_list = major.find(
+                    "ul", class_="reusable-search__entity-result-list list-style-none"
+                )
+                break
+            except:
+                driver.refresh()
+                sleep(1)
+                continue
+        
+        while True:
+            try:
+                # get companies - all list items on page
+                people = people_list.find_all(
+                    "li", class_="reusable-search__result-container"
+                )
+                break
+            except:
+                driver.refresh()
+                sleep(1)
+                continue
 
         # loop through each person on the page
-        for p in people:
+        for person in people:
             # get the Linkedin Member's Name
-            try:
-                name = p.find(
-                    "div",
-                    class_="ivm-view-attr__img-wrapper ivm-view-attr__img-wrapper--use-img-tag display-flex",
-                )
-                name = name.find("img", alt=True)["alt"].lower()
-            except:
-                print("Name failed")
-                name = None
-
-            # alternative way if first one doesnt work
-            if name == None or name == "":
+            # get the Company's name
+            tries = 0
+            while tries <= 5:
                 try:
-                    name = p.find(
-                        "span",
-                        class_="entity-result__title-text t-16",
-                    )
-                    name = (
-                        name.find("a")
-                        .get_text()
-                        .replace("\n", "")
-                        .replace("'s", "")
-                        .replace(" profile", "")
-                        .lower()
-                    )
-                    if name == "linkedin member":
-                        continue
+                    person_name = person.find("a", class_="app-aware-link").find(
+                        "img", alt=True
+                    )["alt"]
+                    person_url = person.find("a", class_="app-aware-link", href=True)[
+                        "href"
+                    ]
+                    break
                 except:
-                    print("Name failed 2")
+                    # manually do it
+                    tries += 1
+                    sleep(0.5)
                     continue
+            if tries >= 5:
+                print("Company Skipped!\n")
+                continue
 
+            
             # get individuals company
             try:
                 company = (
-                    p.find(
+                    person.find(
                         "div",
                         class_="entity-result__primary-subtitle t-14 t-black t-normal",
                     )
